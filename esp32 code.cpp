@@ -10,6 +10,10 @@
 #include <FuzzySet.h>
 #define ESP32_RTOS  
 #include "OTA.h
+//insilisasilibray untuk ph
+#include "DFRobot_ESP_PH.h"
+#include "EEPROM.h"
+
 //mengatur accespoint yang digunakan
 #define mySSID"Citizencouncil"
 #define myPASSWORD"bnjkio7890"
@@ -50,6 +54,15 @@ Fuzzy*fuzzy =new Fuzzy();
   FuzzySet* PROSES=new FuzzySet(0,1021,1021,2050);
   FuzzySet* BUANG=new FuzzySet(2050,3075,3075,4096); 
 
+//ph
+#include "DFRobot_ESP_PH.h"
+#include "EEPROM.h"
+
+DFRobot_ESP_PH ph;
+#define ESPADC 4096.0   //the esp Analog Digital Convertion value
+#define ESPVOLTAGE 3300 //the esp voltage supply value
+#define PH_PIN 35    //the esp gpio data pin number
+float voltage, phValue, temperature = 25;
  
 
 void setup() {
@@ -156,6 +169,9 @@ void setup() {
   thenPROSES6->addOutput(PROSES);
   FuzzyRule* fuzzyRule09 = new FuzzyRule(9,ifpHBSAndTSSSPK,thenPROSES7);
   fuzzy->addFuzzyRule(fuzzyRule09);
+  //ph
+    EEPROM.begin(32);//needed to permit storage of calibration value in eeprom
+  ph.begin();
 }
 
 void loop() {
