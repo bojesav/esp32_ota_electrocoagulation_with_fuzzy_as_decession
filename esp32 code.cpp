@@ -8,6 +8,11 @@
 #include <FuzzyRuleAntecedent.h>
 #include <FuzzyRuleConsequent.h>
 #include <FuzzySet.h>
+#define ESP32_RTOS  
+#include "OTA.h
+//mengatur accespoint yang digunakan
+#define mySSID"Citizencouncil"
+#define myPASSWORD"bnjkio7890"
 
 // LCD 16X2
 #include <LiquidCrystal_I2C.h>
@@ -49,7 +54,7 @@ Fuzzy*fuzzy =new Fuzzy();
 
 void setup() {
   Serial.begin(115200);
-  
+    setupOTA("esp32code", mySSID, myPASSWORD);
   //LCD
   lcd.backlight();
 
@@ -154,12 +159,17 @@ void setup() {
 }
 
 void loop() {
+	#ifdef defined(ESP32_RTOS) && defined(ESP32)
+	#else // If you do not use FreeRTOS, you have to regulary call the handle method.
+  ArduinoOTA.handle();
+	#endif
    //ucapan pembuka pada LCD
-  lcd.setCursor(0,0); lcd.print("==AUTOMASI SISTEM FUZZY==");
-  lcd.setCursor(0,1); lcd.print("ELEKTROKOAGULASI"); 
-  delay(3000);
-  lcd.clear();
-
+	lcd.setCursor(0,0); lcd.print("==AUTOMASI SISTEM FUZZY==");
+	lcd.setCursor(0,1); lcd.print("ELEKTROKOAGULASI"); 
+	delay(3000);
+	lcd.clear();
+	
+	proses1:
 
   //proses pengecekan bak pengisian 
    // Clears the trigPin
@@ -183,6 +193,7 @@ void loop() {
   {digitalWrite(relay_pumpin, LOW);
    digitalWrite(relay_pumpout, HIGH);
   lcd.setCursor(0,0); lcd.print("PROSES pengisian");;}
+  goto proses1;
   
   //jika bak kosong akan dibuang
   else if (distanceCm =13.46)
@@ -191,6 +202,8 @@ void loop() {
   lcd.setCursor(0,0); lcd.print("PROSES Pembuangan");
   }
    delay(500);
+  
+  fuzzy:
   
 
  
