@@ -62,8 +62,11 @@ DFRobot_ESP_PH ph;
 #define ESPADC 4096.0   //the esp Analog Digital Convertion value
 #define ESPVOLTAGE 3300 //the esp voltage supply value
 #define PH_PIN 35    //the esp gpio data pin number
-float voltage, phValue, temperature = 25;
+float voltage, phValue = 25;
  
+//TSS
+
+float volt;
 
 void setup() {
   Serial.begin(115200);
@@ -173,6 +176,33 @@ void setup() {
     EEPROM.begin(32);//needed to permit storage of calibration value in eeprom
   ph.begin();
 }
+void sensorph(){
+	
+	static unsigned long timepoint = millis();
+  if (millis() - timepoint > 1000U) //time interval: 1s
+  {
+    timepoint = millis();
+    //voltage = rawPinValue / esp32ADC * esp32Vin
+    voltage = analogRead(PH_PIN) / ESPADC * ESPVOLTAGE; // read the voltage
+    Serial.print("voltage:");
+    Serial.println(voltage, 4);
+    
+    //temperature = readTemperature();  // read your temperature sensor to execute temperature compensation
+   
+
+    phValue = ph.readPH(voltage); // convert voltage to pH with temperature compensation
+    Serial.print("pH:");
+    Serial.println(phValue, 4);
+  }
+  ph.calibration(voltage, temperature); // calibration process by Serail CMD
+}
+
+void sensorTSS(){
+	int val = analogRead(34);
+
+
+	
+}
 
 void loop() {
 	#ifdef defined(ESP32_RTOS) && defined(ESP32)
@@ -188,7 +218,7 @@ void loop() {
 	proses1:
 
   //proses pengecekan bak pengisian 
-   // Clears the trigPin
+
   lcd.clear();
    
   digitalWrite(trigPin, LOW);
@@ -211,7 +241,7 @@ void loop() {
   lcd.setCursor(0,0); lcd.print("PROSES pengisian");;}
   goto proses1;
   
-  //jika bak kosong akan dibuang
+  //jika bak terisi akan dibuang
   else if (distanceCm =13.46)
   {digitalWrite(relay_pumpin, HIGH);
   digitalWrite(relay_pumpout, LOW  );
@@ -220,8 +250,82 @@ void loop() {
    delay(500);
   
   fuzzy:
+  //proses 2 pentuan kondisi untuk diproses atau di buang 
   
+  //maping nilai baca sensortss
+  double ntu1 = (val *(-0.067)) + 146.65;
+  double ntu =constrain(ntu1, 1, 100);
+  
+  //prosees nilai bacasensor ph
+  int sensorph1=phValue;
+  
+  
+  //variable yang digunakn untuk intput fuzzy
+	fuzzy->setInput(1, ntu);
+	fuzzy->setInput(2, sensorph1);
+	
+	//serial print nilai fuzzifikasi tiap member function
+	  fuzzy->fuzzify();
+	  Serial.print(ntu);
+	  Serial.print("   kepekatan: ");
+	  Serial.print(SPK->getPertinence());
+	  Serial.print(", ");
+	  Serial.print(PK->getPertinence());
+	  Serial.print(", ");
+	  Serial.print(SPK->getPertinence());
+	  Serial.print("  ");
 
- 
+	  Serial.print(sensorph1);
+	  Serial.print("   keasaman: ");
+	  Serial.print(AM->getPertinence());
+	  Serial.print(", ");
+	  Serial.print(OP->getPertinence());
+	  Serial.print(", ");
+	  Serial.print(BS->getPertinence());
+	  Serial.print("  ");
+	  
+	// hasil defuzzy 
+		float output1 = fuzzy->defuzzify(1);
+		// serial print defuzzi
+	  Serial.print("Defuzzy: ");
+	  Serial.println(output1);
+	  
+	//penentuan aksi 
+	//kondisi proses
+	if(output1 >= 0 && output1 <= ){ 
+		lcd.clear();
+		digitalWrite(relay_pumpin, LOW);
+		digitalWrite(relay_pumpout, LOW  );
+		lcd.setCursor(0,0);lcd.print("F=");
+		lcd.setCursor(2,0);lcd.print(output1);
+		lcd.setCursor(9,0);lcd.print("PROSES");
+		bool b=1;
+		lcd.setCursor(0,b);lcd.write(1);lcd.setCursor(1,b);
+		lcd.print("=");lcd.setCursor(2,b);lcd.print(ntu);
+		lcd.setCursor(6,b);lcd.write(2);lcd.setCursor(7,b);
+		lcd.print("=");lcd.setCursor(8,b);lcd.print(sensorph1);
 
+		delay(x);
+		goto fuzzy;
+	  }
+	  
+	 //kondisi BUANG
+  else if(output1 > 2050 && output1 <= 4096){
+    lcd.clear();
+    digitalWrite(relay_pumpin, HIGH);
+    digitalWrite(relay_pumpout, LOW  );
+    lcd.setCursor(0,0);lcd.print("F=");
+    lcd.setCursor(2,0);lcd.print(output1);
+    lcd.setCursor(9,0);lcd.print("BUANG");
+    
+ 	bool b=1;
+		lcd.setCursor(0,b);lcd.write(1);lcd.setCursor(1,b);
+		lcd.print("=");lcd.setCursor(2,b);lcd.print(ntu);
+		lcd.setCursor(6,b);lcd.write(2);lcd.setCursor(7,b);
+		lcd.print("=");lcd.setCursor(8,b);lcd.print(sensorph1);
+
+    
+  
+    goto fuzzy;
+  }
 }
