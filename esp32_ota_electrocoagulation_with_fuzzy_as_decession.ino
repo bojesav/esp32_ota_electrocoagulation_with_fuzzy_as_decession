@@ -9,14 +9,17 @@
 #include <FuzzyRuleConsequent.h>
 #include <FuzzySet.h>
 #define ESP32_RTOS  
-#include "OTA.h
+#include "OTA.h"
 //insilisasilibray untuk ph
 #include "DFRobot_ESP_PH.h"
 #include "EEPROM.h"
 
+//timer
+int x=500;
+
 //mengatur accespoint yang digunakan
-#define mySSID"Citizencouncil"
-#define myPASSWORD"bnjkio7890"
+#define mySSID "Citizencouncil"
+#define myPASSWORD "bnjkio7890"
 
 // LCD 16X2
 #include <LiquidCrystal_I2C.h>
@@ -31,6 +34,8 @@ LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows); //address untuk I2C_lCD
  long duration;
  float distanceCm;
  float distanceInch;
+//ph 
+int val = analogRead(34);
 
 //Relay
   const int relay_pumpin = 27;  //pompa pengisian
@@ -62,9 +67,9 @@ DFRobot_ESP_PH ph;
 #define ESPADC 4096.0   //the esp Analog Digital Convertion value
 #define ESPVOLTAGE 3300 //the esp voltage supply value
 #define PH_PIN 35    //the esp gpio data pin number
-float voltage, phValue = 25;
+float voltage, phValue,temperature = 25;
  
-//TSS
+
 
 float volt;
 
@@ -177,8 +182,7 @@ void setup() {
   ph.begin();
 }
 void sensorph(){
-	
-	static unsigned long timepoint = millis();
+	 static unsigned long timepoint = millis();
   if (millis() - timepoint > 1000U) //time interval: 1s
   {
     timepoint = millis();
@@ -188,27 +192,30 @@ void sensorph(){
     Serial.println(voltage, 4);
     
     //temperature = readTemperature();  // read your temperature sensor to execute temperature compensation
-   
+    Serial.print("temperature:");
+    Serial.print(temperature, 1);
+    Serial.println("^C");
 
-    phValue = ph.readPH(voltage); // convert voltage to pH with temperature compensation
+    phValue = ph.readPH(voltage, temperature); // convert voltage to pH with temperature compensation
     Serial.print("pH:");
     Serial.println(phValue, 4);
   }
   ph.calibration(voltage, temperature); // calibration process by Serail CMD
+	
 }
 
 void sensorTSS(){
-	int val = analogRead(34);
 
-
+	
 	
 }
 
 void loop() {
-	#ifdef defined(ESP32_RTOS) && defined(ESP32)
-	#else // If you do not use FreeRTOS, you have to regulary call the handle method.
+//	#ifdef defined(ESP32_RTOS) && defined(ESP32)
+	//#else // If you do not use FreeRTOS, you have to regulary call the handle method.
   ArduinoOTA.handle();
-	#endif
+	//endif
+  
    //ucapan pembuka pada LCD
 	lcd.setCursor(0,0); lcd.print("==AUTOMASI SISTEM FUZZY==");
 	lcd.setCursor(0,1); lcd.print("ELEKTROKOAGULASI"); 
@@ -239,8 +246,8 @@ void loop() {
   {digitalWrite(relay_pumpin, LOW);
    digitalWrite(relay_pumpout, HIGH);
   lcd.setCursor(0,0); lcd.print("PROSES pengisian");;}
-  goto proses1;
-  
+
+
   //jika bak terisi akan dibuang
   else if (distanceCm =13.46)
   {digitalWrite(relay_pumpin, HIGH);
@@ -252,21 +259,28 @@ void loop() {
   fuzzy:
   //proses 2 pentuan kondisi untuk diproses atau di buang 
   
-  //maping nilai baca sensortss
-  double ntu1 = (val *(-0.067)) + 146.65;
-  double ntu =constrain(ntu1, 1, 100);
+ 
+
+  //sensor ph
+
+	int sensorph1=phValue;
   
-  //prosees nilai bacasensor ph
-  int sensorph1=phValue;
-  
+  //sensor tss
+	double ntu1 = (val *(-0.067)) + 146.65;
+	double ntu =constrain(ntu1, 1, 100);
+	Serial.println("- Kekeruhan : ");
+	Serial.println(" NTU");
+	Serial.println(ntu);
+  delay (x);
+  int ntus=ntu;
   
   //variable yang digunakn untuk intput fuzzy
-	fuzzy->setInput(1, ntu);
+	fuzzy->setInput(1, ntus);
 	fuzzy->setInput(2, sensorph1);
 	
 	//serial print nilai fuzzifikasi tiap member function
 	  fuzzy->fuzzify();
-	  Serial.print(ntu);
+	  Serial.print(ntus);
 	  Serial.print("   kepekatan: ");
 	  Serial.print(SPK->getPertinence());
 	  Serial.print(", ");
@@ -292,7 +306,7 @@ void loop() {
 	  
 	//penentuan aksi 
 	//kondisi proses
-	if(output1 >= 0 && output1 <= ){ 
+	if(output1 >= 0 && output1 <=2049 ){ 
 		lcd.clear();
 		digitalWrite(relay_pumpin, LOW);
 		digitalWrite(relay_pumpout, LOW  );
@@ -301,7 +315,7 @@ void loop() {
 		lcd.setCursor(9,0);lcd.print("PROSES");
 		bool b=1;
 		lcd.setCursor(0,b);lcd.write(1);lcd.setCursor(1,b);
-		lcd.print("=");lcd.setCursor(2,b);lcd.print(ntu);
+		lcd.print("=");lcd.setCursor(2,b);lcd.print(ntus);
 		lcd.setCursor(6,b);lcd.write(2);lcd.setCursor(7,b);
 		lcd.print("=");lcd.setCursor(8,b);lcd.print(sensorph1);
 
@@ -320,7 +334,7 @@ void loop() {
     
  	bool b=1;
 		lcd.setCursor(0,b);lcd.write(1);lcd.setCursor(1,b);
-		lcd.print("=");lcd.setCursor(2,b);lcd.print(ntu);
+		lcd.print("=");lcd.setCursor(2,b);lcd.print(ntus);
 		lcd.setCursor(6,b);lcd.write(2);lcd.setCursor(7,b);
 		lcd.print("=");lcd.setCursor(8,b);lcd.print(sensorph1);
 
