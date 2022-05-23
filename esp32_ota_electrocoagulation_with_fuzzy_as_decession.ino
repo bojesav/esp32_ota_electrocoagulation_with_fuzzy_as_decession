@@ -10,9 +10,15 @@
 #include <FuzzySet.h>
 #define ESP32_RTOS  
 #include "OTA.h"
+#include <FirebaseESP32.h>
 //insilisasilibray untuk ph
 #include "DFRobot_ESP_PH.h"
 #include "EEPROM.h"
+
+
+//untuk pengiriman data ke firebase
+FirebaseData firebaseData;
+FirebaseJson json;
 
 //timer
 int x=500;
@@ -75,6 +81,10 @@ float volt;
 
 void setup() {
   Serial.begin(115200);
+  
+  //auth firebsae
+   Firebase.begin("https://iot-1-a56fd.firebaseio.com/","EtU61TH8BStt56XX21QjmVSnP7jka5VoSRhXmXGO");
+  
     setupOTA("esp32code", mySSID, myPASSWORD);
   //LCD
   lcd.backlight();
@@ -342,4 +352,45 @@ void loop() {
   
     goto fuzzy;
   }
+   if(Firebase.setFloat(firebaseData,"Sensor/TSS",TSS)){
+      Serial.println("send tss sucsessfully"); 
+    }else{
+      Serial.println(" tss not send"); 
+      Serial.println("casue :"+firebaseData.errorReason()); 
+    }
+    if (Firebase.setFloat(firebaseData,"Sensor/pH",pH)){
+      Serial.println("send ph sucsessfully"); 
+    }else{
+      Serial.println("  ph not send"); 
+      Serial.println("casue :"+firebaseData.errorReason());
+    }
+	//for list below database has configure but sensor on esp32 not configure propperly (pompa,statuskran,level air,level ec)
+	
+	if(Firebase.setFloat(firebaseData,"Sensor/pompa",TSS)){
+      Serial.println("send pompa sucsessfully"); 
+    }else{
+      Serial.println(" tss not send"); 
+      Serial.println("casue :"+firebaseData.errorReason()); 
+    }
+    if (Firebase.setFloat(firebaseData,"Sensor/Statuskran",pH)){
+      Serial.println("send ph sucsessfully"); 
+    }else{
+      Serial.println("  statuskran not send"); 
+      Serial.println("casue :"+firebaseData.errorReason());
+    }
+	
+	if(Firebase.setFloat(firebaseData,"Sensor/Levelair",TSS)){
+      Serial.println("send tss sucsessfully"); 
+    }else{
+      Serial.println(" Levelair not send"); 
+      Serial.println("casue :"+firebaseData.errorReason()); 
+    }
+    if (Firebase.setFloat(firebaseData,"Sensor/StatusEC",pH)){
+      Serial.println("send ph sucsessfully"); 
+    }else{
+      Serial.println("  StatusEC not send"); 
+      Serial.println("casue :"+firebaseData.errorReason());
+    }
+	
+    delay(800);
 }
