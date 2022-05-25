@@ -15,6 +15,9 @@
 #include "DFRobot_ESP_PH.h"
 #include "EEPROM.h"
 
+//string
+String (USs);
+
 
 //untuk pengiriman data ke firebase
 FirebaseData firebaseData;
@@ -255,6 +258,7 @@ void loop() {
   if (distanceCm < 4)
   {digitalWrite(relay_pumpin, LOW);
    digitalWrite(relay_pumpout, HIGH);
+   USs="Penuh";
   lcd.setCursor(0,0); lcd.print("PROSES pengisian");;}
 
 
@@ -262,6 +266,7 @@ void loop() {
   else if (distanceCm =13.46)
   {digitalWrite(relay_pumpin, HIGH);
   digitalWrite(relay_pumpout, LOW  );
+  USs="Kosong";
   lcd.setCursor(0,0); lcd.print("PROSES Pembuangan");
   }
    delay(500);
@@ -352,13 +357,17 @@ void loop() {
   
     goto fuzzy;
   }
-   if(Firebase.setFloat(firebaseData,"Sensor/TSS",TSS)){
+  //conversion 
+	//ultrasonic
+		
+  
+   if(Firebase.setFloat(firebaseData,"Sensor/TSS",ntus)){
       Serial.println("send tss sucsessfully"); 
     }else{
       Serial.println(" tss not send"); 
       Serial.println("casue :"+firebaseData.errorReason()); 
     }
-    if (Firebase.setFloat(firebaseData,"Sensor/pH",pH)){
+    if (Firebase.setFloat(firebaseData,"Sensor/pH",sensorph1)){
       Serial.println("send ph sucsessfully"); 
     }else{
       Serial.println("  ph not send"); 
@@ -366,31 +375,13 @@ void loop() {
     }
 	//for list below database has configure but sensor on esp32 not configure propperly (pompa,statuskran,level air,level ec)
 	
-	if(Firebase.setFloat(firebaseData,"Sensor/pompa",TSS)){
+	if(Firebase.setString(firebaseData,"Sensor/Levelair",USs)){
       Serial.println("send pompa sucsessfully"); 
     }else{
-      Serial.println(" tss not send"); 
+      Serial.println(" Wlevel not send"); 
       Serial.println("casue :"+firebaseData.errorReason()); 
     }
-    if (Firebase.setFloat(firebaseData,"Sensor/Statuskran",pH)){
-      Serial.println("send ph sucsessfully"); 
-    }else{
-      Serial.println("  statuskran not send"); 
-      Serial.println("casue :"+firebaseData.errorReason());
-    }
-	
-	if(Firebase.setFloat(firebaseData,"Sensor/Levelair",TSS)){
-      Serial.println("send tss sucsessfully"); 
-    }else{
-      Serial.println(" Levelair not send"); 
-      Serial.println("casue :"+firebaseData.errorReason()); 
-    }
-    if (Firebase.setFloat(firebaseData,"Sensor/StatusEC",pH)){
-      Serial.println("send ph sucsessfully"); 
-    }else{
-      Serial.println("  StatusEC not send"); 
-      Serial.println("casue :"+firebaseData.errorReason());
-    }
+  
 	
     delay(800);
 }
