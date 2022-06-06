@@ -95,7 +95,7 @@ void setup() {
   //PINMODE RELAY ,ULTRASONIC 
   pinMode(relay_pumpin ,OUTPUT);
   pinMode(relay_pumpout ,OUTPUT);
-//pinMode(relay_EC ,OUTPUT);
+  pinMode(relay_EC ,OUTPUT);
   pinMode(trigPin, OUTPUT); // Ultrasonic Sets the trigPin as an Output
   pinMode(echoPin, INPUT); //  UltrasonicSets the echoPin as an Input
   
