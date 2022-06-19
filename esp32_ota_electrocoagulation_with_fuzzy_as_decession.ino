@@ -14,6 +14,8 @@
 //insilisasilibray untuk ph
 #include "DFRobot_ESP_PH.h"
 #include "EEPROM.h"
+#include "time.h"
+
 
 //string
 String (USs);
@@ -22,6 +24,26 @@ String (USs);
 //untuk pengiriman data ke firebase
 FirebaseData firebaseData;
 FirebaseJson json;
+
+
+//ntp
+
+// Variable to save current epoch time
+unsigned long epochTime; 
+const char* ntpServer = "pool.ntp.org";
+
+//get curent epoch time
+unsigned long getTime() {
+  time_t now;
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    //Serial.println("Failed to obtain time");
+    return(0);
+  }
+  time(&now);
+  return now;
+}
+
 
 //timer
 int x=500;
@@ -86,9 +108,13 @@ void setup() {
   Serial.begin(115200);
   
   //auth firebsae
-   Firebase.begin("https://iot-1-a56fd.firebaseio.com/","EtU61TH8BStt56XX21QjmVSnP7jka5VoSRhXmXGO");
-  
+  Firebase.begin("https://ujicova-b614a-default-rtdb.firebaseio.com/","l3NmeFUtle9tV2IrpdiMPTpasdPlKo8dUHOGNshO");
+    (Firebase.setString(firebaseData,"Sensor/Sw","0"));
     setupOTA("esp32code", mySSID, myPASSWORD);
+
+   //int time
+ configTime(0, 0, ntpServer);
+  
   //LCD
   lcd.backlight();
 
@@ -228,7 +254,8 @@ void loop() {
 	//#else // If you do not use FreeRTOS, you have to regulary call the handle method.
   ArduinoOTA.handle();
 	//endif
-  
+   epochTime= getTime();
+  if(Firebase.set(firebaseData,"/Sensor/time",epochTime));
    //ucapan pembuka pada LCD
 	lcd.setCursor(0,0); lcd.print("==AUTOMASI SISTEM FUZZY==");
 	lcd.setCursor(0,1); lcd.print("ELEKTROKOAGULASI"); 
@@ -356,6 +383,90 @@ void loop() {
     
   
     goto fuzzy;
+  }
+
+   //virtual switch
+  if (Firebase.getString(firebaseData, "/Sensor/Sw")) { //misal database diberikan nama relay1
+    if  (firebaseData.dataType() == "string") 
+    {
+      String FBStatus = firebaseData.to<String>();
+      if (FBStatus == "1") {   
+      Serial.println(" manual mode");  
+      
+ if (Firebase.getString(firebaseData, "/Sensor/pompa")) { //misal database diberikan nama relay1
+    if  (firebaseData.dataType() == "string") 
+    {
+      String FBStatus = firebaseData.to<String>();
+      if (FBStatus == "1") {                                                         
+      Serial.println("pompa On");                         
+      digitalWrite(relay_pumpin, HIGH); 
+      }
+          else if (FBStatus == "0") {                                                  
+          Serial.println("Pompa Off");
+          digitalWrite(relay_pumpin, LOW);                                                
+              }
+      else {Serial.println("Salah kode! isi dengan data On/Off");}
+    }
+  }
+
+
+ if (Firebase.getString(firebaseData, "/Sensor/Statuskran")) { //misal database diberikan nama relay1
+    if  (firebaseData.dataType() == "string") 
+    {
+      String FBStatus = firebaseData.to<String>();
+      if (FBStatus == "2") {                                                         
+      Serial.println("pompa2 On");                         
+      digitalWrite(relay_pumpout, HIGH); 
+      }
+          else if (FBStatus == "3") {                                                  
+          Serial.println("Pompa2 Off");
+          digitalWrite(relay_pumpout, LOW);                                                
+              }
+      else {Serial.println("Salah kode! isi dengan data On/Off");}
+    }
+  }
+
+ if (Firebase.getString(firebaseData, "/Sensor/StatusEC")) { //misal database diberikan nama relay1
+    if  (firebaseData.dataType() == "string") 
+    {
+      String FBStatus = firebaseData.to<String>();
+      if (FBStatus == "4") {                                                         
+      Serial.println("Ec On");                         
+      digitalWrite(relay_EC, HIGH); 
+      }
+          else if (FBStatus == "5") {                                                  
+          Serial.println("Ec Off");
+          digitalWrite(relay_EC, LOW);                                                
+              }
+      else {Serial.println("Salah kode! isi dengan data On/Off");}
+    }
+  }
+      }
+          else if (FBStatus== "0") {                                                  
+          Serial.println("otomatis mode");
+          if(Firebase.setFloat(firebaseData,"Sensor/TSS",ntus)){
+      Serial.println("send tss sucsessfully"); 
+    }else{
+      Serial.println(" tss not send"); 
+      Serial.println("casue :"+firebaseData.errorReason()); 
+    }
+    if (Firebase.setFloat(firebaseData,"Sensor/pH",sensorph1)){
+      Serial.println("send ph sucsessfully"); 
+    }else{
+      Serial.println("  ph not send"); 
+      Serial.println("casue :"+firebaseData.errorReason());
+    }
+	//for list below database has configure but sensor on esp32 not configure propperly (pompa,statuskran,level air,level ec)
+	
+	if(Firebase.setString(firebaseData,"Sensor/Levelair",USs)){
+      Serial.println("send pompa sucsessfully"); 
+    }else{
+      Serial.println(" Wlevel not send"); 
+      Serial.println("casue :"+firebaseData.errorReason()); 
+    }
+              }
+      else {Serial.println("Salah kode! isi dengan data On/Off");}
+    }
   }
   //conversion 
 	//ultrasonic
